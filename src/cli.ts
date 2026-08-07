@@ -15,10 +15,11 @@ import path from "node:path";
 import { parseArgs } from "node:util";
 import { loadIgnorePatterns, processPatterns } from "./ignore.js";
 import { compileMatcher } from "./matcher.js";
+import { PRESETS, presetNames } from "./presets/index.js";
 import { traverse } from "./traverse.js";
 import { renderTree } from "./tree.js";
 
-const USAGE = `Usage: agentlens [source] [-i <pattern>...] [-o <file>]
+const USAGE = `Usage: agentlens [source] [-i <pattern>...] [-o <file>] [--preset <name>...]
 
 Arguments:
   source                    Local directory to scan (default: ".")
@@ -28,6 +29,8 @@ Options:
                             gitwildmatch include pattern; repeatable. A single
                             value may hold several comma- or whitespace-separated
                             sub-patterns (e.g. "*.py,*.js" or "*.py *.js").
+  --preset <name>           Built-in include-pattern set; repeatable. Unioned
+                            with -i patterns. Available: ${presetNames().join(", ")}.
   -o, --output <file>       Output file (default: "digest.txt"); "-" means stdout.
   -h, --help                Show this help.
 `;
@@ -39,6 +42,7 @@ function fail(message: string): never {
 
 interface CliValues {
   "include-pattern"?: string[];
+  preset?: string[];
   output?: string;
   help?: boolean;
 }
@@ -51,6 +55,7 @@ async function main(): Promise<void> {
       args: process.argv.slice(2),
       options: {
         "include-pattern": { type: "string", short: "i", multiple: true },
+        preset: { type: "string", multiple: true },
         output: { type: "string", short: "o" },
         help: { type: "boolean", short: "h" },
       },
@@ -86,9 +91,18 @@ async function main(): Promise<void> {
   // Filtering order (gitingest-compatible):
   //   1. default ignore set, minus exact include-pattern matches
   //   2. every `.gitignore` / `.gitingestignore` found under the root
-  //   3. include set, compiled once
+  //   3. include set (user -i patterns ∪ preset expansions), compiled once
+  const presetPatterns: string[] = [];
+  for (const name of values.preset ?? []) {
+    const patterns = PRESETS[name];
+    if (!patterns) {
+      fail(`unknown preset: "${name}" (available: ${presetNames().join(", ")})`);
+    }
+    presetPatterns.push(...patterns);
+  }
+
   const includeRaw = values["include-pattern"] ?? [];
-  const { ignorePatterns, includePatterns } = processPatterns(includeRaw);
+  const { ignorePatterns, includePatterns } = processPatterns(includeRaw, presetPatterns);
   for (const fname of [".gitignore", ".gitingestignore"]) {
     for (const pattern of await loadIgnorePatterns(root, fname)) {
       ignorePatterns.add(pattern);

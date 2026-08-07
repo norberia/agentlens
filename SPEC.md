@@ -16,7 +16,7 @@
 ## 2. CLI 规范
 
 ```
-agentlens [source] [-i <pattern>...] [-o <file>]
+agentlens [source] [-i <pattern>...] [-o <file>] [--preset <name>...]
 ```
 
 - **`source`**：位置参数，本地目录路径，默认 `.`，相对/绝对路径均可。
@@ -27,6 +27,7 @@ agentlens [source] [-i <pattern>...] [-o <file>]
   - 单个模式串内允许用逗号或空白分隔多个子模式：`-i "*.py,*.js"`、`-i "*.py *.js"` 均合法；反斜杠统一归一为正斜杠。
   - 每个 include 模式会从默认忽略集中按字符串精确相减（与 gitingest 的 `process_patterns` 一致）。
 - **`-o, --output <file>`**：默认写到当前目录的 `digest.txt`；`-o -` 表示写 stdout。
+- **`--preset <name>`**：可重复，内置 include 模式集，与用户 `-i` 模式**取并集**后走 §3 的 include 管线（含"include 集从默认忽略集精确相减"的 rescue 机制）。当前唯一合法值为 `deploy`（模式清单见 `PLAN-preset-deploy.md` §3，实现在 `src/presets/deploy.ts`）；未知值 → stderr 报错并列出全部可选 preset 名，非零码退出。
 - **输出通道约定**：写文件时，stdout 只打一行确认（如 `Tree written to digest.txt`）；`-o -` 时 tree 本体写 stdout，所有提示/警告信息一律走 stderr，保证 stdout 可被管道消费。
 
 ## 3. 遍历与过滤规则（与 gitingest 一致）
@@ -71,8 +72,8 @@ Directory structure:
   - 全程只做 `readdir` + `stat`，不打开任何文件内容；
   - 忽略集与 include 集的匹配器在遍历开始前**编译一次**（gitingest 的 Python 实现每个文件都重新编译一次 PathSpec，这是它的主要慢点之一，agentlens 必须避免）；
   - 建议：遍历手写 `fs.promises.readdir({ withFileTypes: true })` 递归或用 `fdir`；gitwildmatch 匹配用 `ignore` 包（完整实现 .gitignore 语义含取反）或 `picomatch`；CLI 参数解析优先用 `node:util` 的 `parseArgs`（零依赖）。
-- **建议模块划分**：`src/cli.ts`（参数解析与输出通道）、`src/ignore.ts`（默认忽略表 + gitignore 收集解析）、`src/traverse.ts`（DFS + 过滤 + 限制）、`src/tree.ts`（排序与渲染）。
-- **验收标准**：在同一目录上，agentlens 的输出与 gitingest 输出中的 tree 段 `diff` 为空。测试方法：构造含嵌套 `.gitignore`、符号链接、隐藏文件、空目录、`node_modules` 的 fixture 目录，两个实现各跑一遍做 diff。
+- **建议模块划分**：`src/cli.ts`（参数解析与输出通道）、`src/ignore.ts`（默认忽略表 + gitignore 收集解析）、`src/traverse.ts`（DFS + 过滤 + 限制）、`src/tree.ts`（排序与渲染）、`src/presets/`（内置 preset 模式清单，如 `deploy.ts`）。
+- **验收标准**：在同一目录上，agentlens 的输出与 gitingest 输出中的 tree 段 `diff` 为空。测试方法：构造含嵌套 `.gitignore`、符号链接、隐藏文件、空目录、`node_modules` 的 fixture 目录，两个实现各跑一遍做 diff。**注意**：该验收仅适用于不带 `--preset` 的场景（gitingest 无 preset 功能，无可比性）；preset 功能的验收条款见 `PLAN-preset-deploy.md` §5。
 
 ## 附录 A：DEFAULT_IGNORE_PATTERNS 全量清单
 

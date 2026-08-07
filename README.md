@@ -3,7 +3,7 @@
 极快的本地目录文件树 CLI。输出与 [gitingest](https://github.com/cyclotruc/gitingest) 输出三段中的 tree 段**逐字节一致**（仅含下文列出的少量有意偏离）。
 
 ```
-agentlens [source] [-i <pattern>...] [-o <file>]
+agentlens [source] [-i <pattern>...] [-o <file>] [--preset <name>...]
 ```
 
 ## 安装 / 构建
@@ -26,7 +26,20 @@ agentlens . -i "*.py"          # 只保留匹配的文件；无子节点的目�
 agentlens . -i "*.py,*.js"     # 逗号分隔
 agentlens . -i "*.py *.js"     # 空白分隔
 agentlens . -i "*.py" -i "*.md"  # 重复标志
+agentlens . --preset deploy      # 只列出部署相关文件（内置模式集）
+agentlens . --preset deploy -i "*.md"  # preset ∪ 自定义 -i
 ```
+
+### `--preset deploy`
+
+内置的"部署透镜"：只列出与构建/部署相关的文件——语言/框架 marker（`package.json`、`go.mod`、`Cargo.toml`…）、容器/编排（`Dockerfile*`、`compose*.yml`…）、部署平台/CI/IaC（`vercel.json`、`.github/workflows/*`、`*.tf`…）、环境/运行时版本（`.env`、`.nvmrc`…）。完整清单与设计说明见 `PLAN-preset-deploy.md`，模式数据在 `src/presets/deploy.ts`。
+
+- 模式与用户 `-i` **取并集**，走同一条 gitingest include 管线；
+- `Cargo.lock`、`.env`、`package-lock.json` 等同时在默认忽略集里的条目，靠"精确相减"机制自动 rescue；
+- 定位是给 agent 的启发式透镜，宁多勿漏（`*.tf`、`main.go` 等假阳性是有意取舍）；
+- 使用 preset 时输出与 gitingest 无可比性（gitingest 无此功能）。
+
+未知 preset 名会以非零码退出并在 stderr 列出全部可选值。
 
 输出示例：
 

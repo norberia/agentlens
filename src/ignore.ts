@@ -201,12 +201,16 @@ export interface ProcessedPatterns {
  * Combine the default ignore set with include patterns. Each include pattern
  * is subtracted from the ignore set by exact string match.
  * Port of gitingest's `process_patterns` (exclude patterns unsupported by design).
+ *
+ * `extraInclude` carries already-normalized patterns (e.g. preset expansions)
+ * that bypass the comma/whitespace splitting applied to raw CLI strings.
  */
-export function processPatterns(includeRaw: string[]): ProcessedPatterns {
+export function processPatterns(includeRaw: string[], extraInclude: readonly string[] = []): ProcessedPatterns {
   const ignorePatterns = new Set<string>(DEFAULT_IGNORE_PATTERNS);
   let includePatterns: Set<string> | null = null;
-  if (includeRaw.length > 0) {
+  if (includeRaw.length > 0 || extraInclude.length > 0) {
     includePatterns = parsePatterns(includeRaw);
+    for (const p of extraInclude) includePatterns.add(p);
     for (const p of includePatterns) ignorePatterns.delete(p);
   }
   return { ignorePatterns, includePatterns };
