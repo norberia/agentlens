@@ -1,53 +1,58 @@
 # agentlens
 
-极快的本地目录文件树 CLI。输出与 [gitingest](https://github.com/cyclotruc/gitingest) 输出三段中的 tree 段**逐字节一致**（仅含下文列出的少量有意偏离）。
+A fast local directory-tree CLI for agents and humans. Inspired by [gitingest](https://github.com/cyclotruc/gitingest).
 
 ```
 agentlens [source] [-i <pattern>...] [-o <file>] [--preset <name>...]
 ```
 
-## 安装 / 构建
+## Install
 
 ```bash
-npm install -g @norberia/agentlens   # 从 npm 全局安装，获得 `agentlens` 命令
+npm install -g @norberia/agentlens
 ```
 
-或从源码构建：
+Or run without installing:
+
+```bash
+npx @norberia/agentlens
+```
+
+Or build from source:
 
 ```bash
 npm install
-npm run build      # tsup → dist/cli.js（单文件、零运行时依赖）
-npm link           # 可选：全局获得 `agentlens` 命令
+npm run build      # tsup → dist/cli.js (single file, zero runtime dependencies)
+npm link           # optional: expose the `agentlens` binary globally
 ```
 
-要求 Node.js >= 18。
+Requires Node.js >= 18.
 
-## 用法
+## Usage
 
 ```bash
-agentlens                      # 当前目录 → 写 digest.txt，stdout 打一行确认
-agentlens ./src                # 指定目录
-agentlens . -o -               # tree 写 stdout（提示/警告一律走 stderr，可管道消费）
-agentlens . -i "*.py"          # 只保留匹配的文件；无子节点的目录整支剪掉
-agentlens . -i "*.py,*.js"     # 逗号分隔
-agentlens . -i "*.py *.js"     # 空白分隔
-agentlens . -i "*.py" -i "*.md"  # 重复标志
-agentlens . --preset deploy      # 只列出部署相关文件（内置模式集）
-agentlens . --preset deploy -i "*.md"  # preset ∪ 自定义 -i
+agentlens                      # cwd → write digest.txt; confirm on stdout
+agentlens ./src                # specific directory
+agentlens . -o -               # tree on stdout (hints/warnings on stderr; pipe-safe)
+agentlens . -i "*.py"          # keep matching files; prune empty directory branches
+agentlens . -i "*.py,*.js"     # comma-separated
+agentlens . -i "*.py *.js"     # whitespace-separated
+agentlens . -i "*.py" -i "*.md"  # repeated flags
+agentlens . --preset deploy      # built-in deploy lens
+agentlens . --preset deploy -i "*.md"  # preset ∪ custom -i
 ```
 
 ### `--preset deploy`
 
-内置的"部署透镜"：只列出与构建/部署相关的文件——语言/框架 marker（`package.json`、`go.mod`、`Cargo.toml`…）、容器/编排（`Dockerfile*`、`compose*.yml`…）、部署平台/CI/IaC（`vercel.json`、`.github/workflows/*`、`*.tf`…）、环境/运行时版本（`.env`、`.nvmrc`…）。完整清单与设计说明见 `PLAN-preset-deploy.md`，模式数据在 `src/presets/deploy.ts`。
+A built-in deploy lens: surfaces files relevant to build and deployment—language/framework markers (`package.json`, `go.mod`, `Cargo.toml`, …), containers and orchestration (`Dockerfile*`, `compose*.yml`, …), platforms/CI/IaC (`vercel.json`, `.github/workflows/*`, `*.tf`, …), and environment/runtime pins (`.env`, `.nvmrc`, …). Full pattern list and rationale: `PLAN-preset-deploy.md`; data: `src/presets/deploy.ts`.
 
-- 模式与用户 `-i` **取并集**，走同一条 gitingest include 管线；
-- `Cargo.lock`、`.env`、`package-lock.json` 等同时在默认忽略集里的条目，靠"精确相减"机制自动 rescue；
-- 定位是给 agent 的启发式透镜，宁多勿漏（`*.tf`、`main.go` 等假阳性是有意取舍）；
-- 使用 preset 时输出与 gitingest 无可比性（gitingest 无此功能）。
+- Patterns are unioned with user `-i` and share the same include pipeline.
+- Entries that also sit in the default ignore set (`Cargo.lock`, `.env`, `package-lock.json`, …) are restored via exact-subtraction rescue.
+- Heuristic for agents: prefer recall over precision (`*.tf`, `main.go`, and similar false positives are deliberate).
 
-未知 preset 名会以非零码退出并在 stderr 列出全部可选值。
+Unknown preset names exit non-zero and list valid values on stderr.
 
-输出示例：
+Example output:
 
 ```
 Directory structure:
@@ -60,46 +65,33 @@ Directory structure:
         └── main.py
 ```
 
-## 与 gitingest 的兼容性
+## Performance
 
-- 默认忽略集逐条复刻 gitingest 的 `DEFAULT_IGNORE_PATTERNS`（约 140 条）；`.gitignore` / `.gitingestignore` 从根目录出发收集所有层级，解析规则一致（`!` 取反、去掉前导 `/`、拼接所在目录前缀）。
-- 匹配语义为 gitwildmatch，与 gitingest 使用的 Python `pathspec` 逐路径求值语义**完全一致**（`src/matcher.ts` 是 pathspec `GitIgnoreSpecPattern` 的逐行移植——因此与真实 git 有一点相同于 pathspec 的偏离：取反规则可以重新包含被排除目录内的文件）。
-- 排序、连线、符号链接显示（`<name> -> <目标basename>`）、目录尾斜杠、结尾单换行均逐字节对齐。
-- 限制规则保留：单文件 >10MB 跳过、深度 >20 停止、累计 10,000 文件 / 500MB 停止。
-- 匹配器在遍历开始前只编译一次（gitingest 每个文件重新编译一次 PathSpec，是它的主要慢点）。8000 文件基准：agentlens ~0.19s vs gitingest ~4.2s。
+Wall-clock times on real open-source checkouts versus gitingest (representative sample):
 
-**有意偏离：**
+| Repo | gitingest | agentlens |
+|------|-----------|-----------|
+| Twenty CRM | 478.89 s | 1.38 s |
+| PostHog | 312.74 s | 1.08 s |
+| Zabbix | 235.12 s | 0.47 s |
+| Penpot | 170.50 s | 0.31 s |
+| Stirling-PDF | 165.45 s | 0.46 s |
+| Immich | 13.27 s | 0.22 s |
+| Chatwoot | 13.93 s | 0.53 s |
+| Grocy | 0.91 s | 0.07 s |
 
-1. 不支持远程 URL / clone / branch / tag / token / submodules；不输出 summary 与文件内容段；不读取任何文件内容。
-2. 不支持单文件 ingest（source 必须是目录）。
-3. 遇到无权限读取的目录/文件：跳过并 stderr 警告（gitingest 直接崩溃）。
-4. 非法 pattern（如悬空反斜杠、无效区间）按 null-op 丢弃（gitingest 会抛异常崩溃）。
-5. 冲突 pattern 的优先级按声明顺序（gitingest 用 Python set 存储 pattern，冲突时结果依赖哈希随机化，本就非确定）。
-
-## 开发
+## Development
 
 ```bash
 npm run typecheck
-npm test           # 构建 + matcher 对拍测试（8944 条 pathspec 参考用例）+ tree 渲染测试
+npm test           # build + matcher parity (8,944 pathspec reference cases) + tree render tests
 ```
 
-`test/matcher-cases.json` 由 `test/generate-matcher-cases.py` 生成（需要本地安装 pathspec）。
+`test/matcher-cases.json` is produced by `test/generate-matcher-cases.py` (requires a local `pathspec` install).
 
-## 验收
+## Package name
 
-在同一目录上与 gitingest 做 tree 段 diff：
-
-```bash
-gitingest <dir> -o /tmp/gi.txt
-# 提取 tree 段（"Directory structure:" 到 48 个 '=' 分隔线之间，去掉拼接换行）
-agentlens <dir> -o - | diff - <(提取后的 tree 段)
-```
-
-已在以下场景验证 `diff` 为空：含嵌套 `.gitignore` / `.gitingestignore` / 符号链接 / 隐藏文件 / 空目录 / `node_modules` 的 fixture、`-i` 各形态、gitingest 仓库本体、agentlens 仓库本体、8000 文件合成树。
-
-## 包名说明
-
-npm 上 `agentlens` 已被占用（2024-10 发布的 1.0.0），因此以 scoped 形式发布为 `@norberia/agentlens`；`bin` 名仍是 `agentlens`，安装后命令不变。
+The unscoped name `agentlens` is taken on npm (1.0.0, Oct 2024). This package ships as `@norberia/agentlens`; the binary remains `agentlens`.
 
 ## License
 
