@@ -44,7 +44,7 @@ agentlens . --preset deploy -i "*.md"  # preset ∪ custom -i
 
 ### `--preset deploy`
 
-A built-in deploy lens: surfaces files relevant to build and deployment—language/framework markers (`package.json`, `go.mod`, `Cargo.toml`, …), containers and orchestration (`Dockerfile*`, `compose*.yml`, …), platforms/CI/IaC (`vercel.json`, `.github/workflows/*`, `*.tf`, …), and environment/runtime pins (`.env`, `.nvmrc`, …). Full pattern list and rationale: `PLAN-preset-deploy.md`; data: `src/presets/deploy.ts`.
+A built-in deploy lens: surfaces files relevant to build and deployment—language/framework markers (`package.json`, `go.mod`, `Cargo.toml`, …), containers and orchestration (`Dockerfile*`, `compose*.yml`, …), platforms/CI/IaC (`vercel.json`, `.github/workflows/*`, `*.tf`, …), and environment/runtime pins (`.env`, `.nvmrc`, …). Pattern data: `src/presets/deploy.ts`.
 
 - Patterns are unioned with user `-i` and share the same include pipeline.
 - Entries that also sit in the default ignore set (`Cargo.lock`, `.env`, `package-lock.json`, …) are restored via exact-subtraction rescue.

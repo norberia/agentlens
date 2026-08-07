@@ -1,7 +1,7 @@
 "use strict";
 
 /**
- * `--preset deploy` tests (PLAN-preset-deploy.md §5).
+ * `--preset deploy` tests.
  * Runs the built CLI against a temp fixture and asserts on the tree output.
  */
 
