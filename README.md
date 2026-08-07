@@ -9,6 +9,12 @@ agentlens [source] [-i <pattern>...] [-o <file>] [--preset <name>...]
 ## 安装 / 构建
 
 ```bash
+npm install -g @norberia/agentlens   # 从 npm 全局安装，获得 `agentlens` 命令
+```
+
+或从源码构建：
+
+```bash
 npm install
 npm run build      # tsup → dist/cli.js（单文件、零运行时依赖）
 npm link           # 可选：全局获得 `agentlens` 命令
@@ -93,7 +99,7 @@ agentlens <dir> -o - | diff - <(提取后的 tree 段)
 
 ## 包名说明
 
-npm 上 `agentlens` 已被占用（2024-10 发布的 1.0.0），本仓库使用 scope 占位名 `@agentlens/agentlens`；正式上架需换成自己的 scope 或改名。
+npm 上 `agentlens` 已被占用（2024-10 发布的 1.0.0），因此以 scoped 形式发布为 `@norberia/agentlens`；`bin` 名仍是 `agentlens`，安装后命令不变。
 
 ## License
 

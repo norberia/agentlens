@@ -1,8 +1,27 @@
 {
-  "name": "@agentlens/agentlens",
+  "name": "@norberia/agentlens",
   "version": "0.1.0",
   "description": "Blazingly fast, gitingest-compatible directory tree printer for local directories",
   "license": "MIT",
+  "author": "Che Zhu",
+  "keywords": [
+    "directory-tree",
+    "file-tree",
+    "gitingest",
+    "cli",
+    "gitignore",
+    "codebase",
+    "llm-context"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Che-Zhu/agentlens.git"
+  },
+  "homepage": "https://github.com/Che-Zhu/agentlens#readme",
+  "bugs": "https://github.com/Che-Zhu/agentlens/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "bin": {
     "agentlens": "dist/cli.js"
   },
@@ -16,7 +35,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "npm run build && tsc -p tsconfig.test.json && node --test"
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test",
+    "prepublishOnly": "npm run test"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
