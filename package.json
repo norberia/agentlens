@@ -1,0 +1,26 @@
+{
+  "name": "@agentlens/agentlens",
+  "version": "0.1.0",
+  "description": "Blazingly fast, gitingest-compatible directory tree printer for local directories",
+  "license": "MIT",
+  "bin": {
+    "agentlens": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && tsc -p tsconfig.test.json && node --test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  }
+}
