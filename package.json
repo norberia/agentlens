@@ -1,9 +1,9 @@
 {
   "name": "@norberia/agentlens",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Blazingly fast, gitingest-compatible directory tree printer for local directories",
   "license": "MIT",
-  "author": "Che Zhu",
+  "author": "Norberia",
   "keywords": [
     "directory-tree",
     "file-tree",
@@ -15,10 +15,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Che-Zhu/agentlens.git"
+    "url": "git+https://github.com/norberia/agentlens.git"
   },
-  "homepage": "https://github.com/Che-Zhu/agentlens#readme",
-  "bugs": "https://github.com/Che-Zhu/agentlens/issues",
+  "homepage": "https://github.com/norberia/agentlens#readme",
+  "bugs": "https://github.com/norberia/agentlens/issues",
   "publishConfig": {
     "access": "public"
   },
