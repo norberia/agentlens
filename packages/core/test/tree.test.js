@@ -5,7 +5,7 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
-const { NodeType, sortChildren } = require("../.test-build/traverse.js");
+const { NodeType, sortChildren } = require("../.test-build/node.js");
 const { renderTree } = require("../.test-build/tree.js");
 
 function dir(name, children = []) {

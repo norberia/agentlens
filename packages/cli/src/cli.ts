@@ -13,11 +13,16 @@
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
-import { loadIgnorePatterns, processPatterns } from "./ignore.js";
-import { compileMatcher } from "./matcher.js";
-import { PRESETS, presetNames } from "./presets/index.js";
+import {
+  compileMatcher,
+  presetNames,
+  processPatterns,
+  renderTree,
+  resolvePresetPatterns,
+  UnknownPresetError,
+} from "@norberia/agentlens-core";
+import { loadIgnorePatterns } from "./ignore-fs.js";
 import { traverse } from "./traverse.js";
-import { renderTree } from "./tree.js";
 
 const USAGE = `Usage: agentlens [source] [-i <pattern>...] [-o <file>] [--preset <name>...]
 
@@ -92,13 +97,12 @@ async function main(): Promise<void> {
   //   1. default ignore set, minus exact include-pattern matches
   //   2. every `.gitignore` / `.gitingestignore` found under the root
   //   3. include set (user -i patterns ∪ preset expansions), compiled once
-  const presetPatterns: string[] = [];
-  for (const name of values.preset ?? []) {
-    const patterns = PRESETS[name];
-    if (!patterns) {
-      fail(`unknown preset: "${name}" (available: ${presetNames().join(", ")})`);
-    }
-    presetPatterns.push(...patterns);
+  let presetPatterns: string[];
+  try {
+    presetPatterns = resolvePresetPatterns(values.preset ?? []);
+  } catch (err) {
+    if (err instanceof UnknownPresetError) fail(err.message);
+    throw err;
   }
 
   const includeRaw = values["include-pattern"] ?? [];

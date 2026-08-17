@@ -9,15 +9,19 @@
  *  - exactly one trailing newline after the last line.
  */
 
-import path from "node:path";
-import { NodeType, type FsNode } from "./traverse.js";
+import { NodeType, type FsNode } from "./node.js";
+
+function posixBasename(p: string): string {
+  const norm = p.split("\\").join("/");
+  const i = norm.lastIndexOf("/");
+  return i === -1 ? norm : norm.slice(i + 1);
+}
 
 function displayName(node: FsNode): string {
   if (node.type === NodeType.Directory) return `${node.name}/`;
   if (node.type === NodeType.Symlink) {
     // gitingest shows `readlink(path).name` — the basename of the raw target.
-    const targetBase = path.posix.basename((node.linkTarget ?? "").split(path.sep).join("/"));
-    return `${node.name} -> ${targetBase}`;
+    return `${node.name} -> ${posixBasename(node.linkTarget ?? "")}`;
   }
   return node.name;
 }

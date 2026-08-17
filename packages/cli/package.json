@@ -1,0 +1,48 @@
+{
+  "name": "@norberia/agentlens",
+  "version": "1.0.0",
+  "description": "Blazingly fast, gitingest-compatible directory tree printer for local directories",
+  "license": "MIT",
+  "author": "Norberia",
+  "keywords": [
+    "directory-tree",
+    "file-tree",
+    "gitingest",
+    "cli",
+    "gitignore",
+    "codebase",
+    "llm-context"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/norberia/agentlens.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/norberia/agentlens#readme",
+  "bugs": "https://github.com/norberia/agentlens/issues",
+  "publishConfig": {
+    "access": "public"
+  },
+  "bin": {
+    "agentlens": "dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "npm run build && node --test test/*.test.js",
+    "prepublishOnly": "npm test"
+  },
+  "devDependencies": {
+    "@norberia/agentlens-core": "*",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  }
+}

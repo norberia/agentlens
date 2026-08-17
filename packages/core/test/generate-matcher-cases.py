@@ -4,13 +4,14 @@
 For every (pattern-set, path) pair, records whether pathspec's gitwildmatch
 matcher reports a match. The JS test asserts agentlens' matcher agrees.
 
-Output: test/matcher-cases.json  →  {"cases": [{"patterns": [...], "path": "...", "expected": true|false|null}]}
+Output: matcher-cases.json (next to this script)  →  {"cases": [{"patterns": [...], "path": "...", "expected": true|false|null}]}
 `expected: null` means pathspec raises (invalid pattern) — agentlens treats
 those as null-ops instead of crashing and must return False.
 """
 
 import json
 import sys
+from pathlib import Path
 
 import pathspec
 
@@ -111,7 +112,8 @@ for pats in MULTI_SETS:
         except Exception:
             cases.append({"patterns": pats, "path": p, "expected": None})
 
-with open("test/matcher-cases.json", "w") as fh:
+out = Path(__file__).with_name("matcher-cases.json")
+with out.open("w") as fh:
     json.dump({"cases": cases}, fh, indent=1)
 
 print(f"wrote {len(cases)} cases", file=sys.stderr)
