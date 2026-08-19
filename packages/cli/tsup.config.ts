@@ -8,4 +8,5 @@ export default defineConfig({
   clean: true,
   minify: false,
   sourcemap: false,
+  noExternal: [/@norberia\/agentlens-core/],
 });

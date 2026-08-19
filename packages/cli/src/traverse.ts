@@ -15,35 +15,21 @@
 
 import fs from "node:fs";
 import path from "node:path";
-import type { Matcher } from "./matcher.js";
+import {
+  MAX_DIRECTORY_DEPTH,
+  MAX_FILE_SIZE,
+  MAX_FILES,
+  MAX_TOTAL_SIZE_BYTES,
+  NodeType,
+  createWalkStats,
+  shouldKeepEntry,
+  sortChildren,
+  warnLimit,
+  type FilterMatchers,
+  type FsNode,
+} from "@norberia/agentlens-core";
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-export const MAX_DIRECTORY_DEPTH = 20;
-export const MAX_FILES = 10_000;
-export const MAX_TOTAL_SIZE_BYTES = 500 * 1024 * 1024; // 500 MB
-
-export enum NodeType {
-  Directory = "directory",
-  File = "file",
-  Symlink = "symlink",
-}
-
-export interface FsNode {
-  name: string;
-  type: NodeType;
-  /** Link target as reported by readlink (symlinks only). */
-  linkTarget?: string;
-  children: FsNode[];
-}
-
-interface Stats {
-  totalFiles: number;
-  totalSize: number;
-}
-
-export interface TraverseOptions {
-  ignoreMatcher: Matcher;
-  includeMatcher: Matcher | null;
+export interface TraverseOptions extends FilterMatchers {
   onWarning?: (message: string) => void;
 }
 
@@ -53,21 +39,21 @@ function toPosix(p: string): string {
 
 export async function traverse(root: string, options: TraverseOptions): Promise<FsNode> {
   const warn = options.onWarning ?? ((m: string) => console.error(m));
-  const stats: Stats = { totalFiles: 0, totalSize: 0 };
+  const stats = createWalkStats();
 
   const rootNode: FsNode = { name: path.basename(root), type: NodeType.Directory, children: [] };
 
   function limitExceeded(depth: number): boolean {
     if (depth > MAX_DIRECTORY_DEPTH) {
-      warn(`agentlens: warning: maximum directory depth (${MAX_DIRECTORY_DEPTH}) reached`);
+      warnLimit("depth", warn);
       return true;
     }
     if (stats.totalFiles >= MAX_FILES) {
-      warn(`agentlens: warning: maximum file limit (${MAX_FILES}) reached`);
+      warnLimit("files", warn);
       return true;
     }
     if (stats.totalSize >= MAX_TOTAL_SIZE_BYTES) {
-      warn(`agentlens: warning: maximum total size (${MAX_TOTAL_SIZE_BYTES} bytes) reached`);
+      warnLimit("size", warn);
       return true;
     }
     return false;
@@ -104,13 +90,7 @@ export async function traverse(root: string, options: TraverseOptions): Promise<
         }
       }
 
-      // 1. Ignore set: a hit prunes the whole branch.
-      if (options.ignoreMatcher.matches(posixRel)) continue;
-
-      // 2. Include set: directories always pass; files must match.
-      if (options.includeMatcher && !isDirForInclude && !options.includeMatcher.matches(posixRel)) {
-        continue;
-      }
+      if (!shouldKeepEntry(posixRel, isDirForInclude, options)) continue;
 
       if (isSymlink) {
         let linkTarget: string;
@@ -132,11 +112,11 @@ export async function traverse(root: string, options: TraverseOptions): Promise<
         }
         if (size > MAX_FILE_SIZE) continue;
         if (stats.totalFiles + 1 > MAX_FILES) {
-          warn(`agentlens: warning: maximum file limit (${MAX_FILES}) reached`);
+          warnLimit("files", warn);
           continue;
         }
         if (stats.totalSize + size > MAX_TOTAL_SIZE_BYTES) {
-          warn(`agentlens: warning: maximum total size (${MAX_TOTAL_SIZE_BYTES} bytes) reached`);
+          warnLimit("size", warn);
           continue;
         }
         stats.totalFiles += 1;
@@ -158,27 +138,4 @@ export async function traverse(root: string, options: TraverseOptions): Promise<
 
   await processNode(rootNode, root, "", 0);
   return rootNode;
-}
-
-/**
- * gitingest's `sort_children`: README files, then regular files, hidden files,
- * regular directories, hidden directories; each group ordered by lowercased
- * name. Symlinks are grouped with directories (gitingest groups anything that
- * is not of type FILE into the directory groups).
- */
-export function sortChildren(node: FsNode): void {
-  const key = (child: FsNode): [number, string] => {
-    const name = child.name.toLowerCase();
-    if (child.type === NodeType.File) {
-      if (name === "readme" || name.startsWith("readme.")) return [0, name];
-      return [name.startsWith(".") ? 2 : 1, name];
-    }
-    return [name.startsWith(".") ? 4 : 3, name];
-  };
-  node.children.sort((a, b) => {
-    const [ga, na] = key(a);
-    const [gb, nb] = key(b);
-    if (ga !== gb) return ga - gb;
-    return na < nb ? -1 : na > nb ? 1 : 0;
-  });
 }

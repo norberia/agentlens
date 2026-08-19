@@ -1,46 +1,18 @@
 {
-  "name": "@norberia/agentlens",
-  "version": "1.0.0",
-  "description": "Blazingly fast, gitingest-compatible directory tree printer for local directories",
-  "license": "MIT",
-  "author": "Norberia",
-  "keywords": [
-    "directory-tree",
-    "file-tree",
-    "gitingest",
-    "cli",
-    "gitignore",
-    "codebase",
-    "llm-context"
+  "name": "agentlens",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
   ],
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/norberia/agentlens.git"
+  "scripts": {
+    "build": "npm run build -w @norberia/agentlens",
+    "build:web": "npm run build -w @norberia/agentlens-web",
+    "dev": "npm run dev -w @norberia/agentlens-web",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test -w @norberia/agentlens-core && npm run test -w @norberia/agentlens"
   },
-  "homepage": "https://github.com/norberia/agentlens#readme",
-  "bugs": "https://github.com/norberia/agentlens/issues",
-  "publishConfig": {
-    "access": "public"
-  },
-  "bin": {
-    "agentlens": "dist/cli.js"
-  },
-  "files": [
-    "dist"
-  ],
   "engines": {
     "node": ">=18"
-  },
-  "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "npm run build && tsc -p tsconfig.test.json && node --test",
-    "prepublishOnly": "npm run test"
-  },
-  "devDependencies": {
-    "@types/node": "^22.0.0",
-    "tsup": "^8.0.0",
-    "typescript": "^5.5.0"
   }
 }
